@@ -6,17 +6,25 @@ Local or web: static HTML/CSS/JS. Optional [GolfCourseAPI](https://golfcourseapi
 
 1. **Create a new repository** on GitHub (any name, e.g. `golf-handicap`). Do not add a README from the template if you want this folder to be the only content.
 
-2. **Push this project** from your machine (replace `YOUR_USER` and `YOUR_REPO`):
+2. **Push this project** from your machine (replace `YOUR_USER` and `YOUR_REPO`).
+
+   This folder is already a git repo with an initial commit. From the parent of `golf-handicap`:
 
    ```bash
    cd golf-handicap
-   git init
-   git add .
-   git commit -m "Initial commit: golf handicap app"
    git branch -M main
    git remote add origin https://github.com/YOUR_USER/YOUR_REPO.git
    git push -u origin main
    ```
+
+   If Git complains about your name or email, set them **for this repo only**, then commit again if needed:
+
+   ```bash
+   git config user.name "Your Name"
+   git config user.email "you@users.noreply.github.com"
+   ```
+
+   (If you are starting from a **zip** without `.git`, run `git init`, `git add .`, and `git commit` first.)
 
 3. **Turn on GitHub Pages**
 
