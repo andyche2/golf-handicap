@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Golf Handicap (WHS)</title>
+    <script>
+      (function () {
+        try {
+          var k = "golf-handicap-theme";
+          var t = localStorage.getItem(k);
+          if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+          else document.documentElement.setAttribute("data-theme", "dark");
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="page">
+      <div class="theme-bar" role="toolbar" aria-label="Display theme">
+        <span class="theme-label">Theme</span>
+        <div class="theme-switch" role="group" aria-label="Choose light or dark theme">
+          <button type="button" class="theme-opt" id="theme-opt-dark" data-theme-value="dark" aria-pressed="true">
+            Dark
+          </button>
+          <button type="button" class="theme-opt" id="theme-opt-light" data-theme-value="light" aria-pressed="false">
+            Light
+          </button>
+        </div>
+      </div>
+      <header class="hero">
+        <div class="hero-inner">
+          <p class="eyebrow">Local · Private · WHS-based</p>
+          <h1>Handicap calculator</h1>
+          <p class="lede">
+            Track 18-hole rounds with course rating and slope from the tee box you played. Your
+            <strong>Handicap Index</strong> follows the World Handicap System (lowest differentials from your
+            record, last 20 scores when you have more than 20). Data stays in this browser unless you export it.
+          </p>
+        </div>
+      </header>
+
+      <main class="grid">
+        <section class="card highlight" aria-labelledby="hi-title">
+          <h2 id="hi-title">Handicap Index</h2>
+          <p class="big-index" id="handicap-index">—</p>
+          <p class="meta" id="hi-meta"></p>
+          <p class="fineprint">
+            Enter <strong>adjusted gross</strong> (after maximum hole score / net double bogey). PCC defaults to 0.
+            This tool does not apply national union adjustments, exceptional score reduction, or soft/hard caps—your
+            official index may differ slightly.
+          </p>
+        </section>
+
+        <section class="card" aria-labelledby="ch-title">
+          <h2 id="ch-title">Course Handicap</h2>
+          <p class="sub">
+            For a tee you plan to play: <code>HI × (Slope / 113) + (Course Rating − Par)</code>, rounded to a whole
+            number.
+          </p>
+          <p class="ch-tools">
+            <span id="ch-index-suggest" class="muted-inline"></span>
+            <button type="button" class="btn secondary sm" id="btn-use-index" hidden>
+              Use calculated index
+            </button>
+          </p>
+          <div class="row four">
+            <label>
+              Handicap Index
+              <input type="number" id="ch-hi" step="0.1" placeholder="e.g. 12.4" />
+            </label>
+            <label>
+              Slope
+              <input type="number" id="ch-slope" step="1" placeholder="130" />
+            </label>
+            <label>
+              Course rating
+              <input type="number" id="ch-cr" step="0.1" placeholder="72.1" />
+            </label>
+            <label>
+              Par
+              <input type="number" id="ch-par" step="1" placeholder="72" />
+            </label>
+          </div>
+          <p class="ch-result">
+            Course Handicap: <span id="course-handicap-out">—</span>
+          </p>
+        </section>
+
+        <section class="card wide" aria-labelledby="lookup-title">
+          <h2 id="lookup-title">Course lookup</h2>
+          <p class="sub">
+            Search courses and load <strong>course rating</strong>, <strong>slope</strong>, and <strong>par</strong> from the
+            <a href="https://golfcourseapi.com" target="_blank" rel="noopener noreferrer">GolfCourseAPI</a> catalog (free
+            tier available). Paste your API key below; it is stored only in this browser.
+          </p>
+          <div class="api-key-row">
+            <label class="grow">
+              GolfCourseAPI key
+              <input
+                type="password"
+                id="golf-api-key"
+                autocomplete="off"
+                placeholder="Sign up at golfcourseapi.com"
+              />
+            </label>
+            <button type="button" class="btn secondary" id="btn-save-api-key">Save key</button>
+            <button type="button" class="btn secondary sm" id="btn-clear-api-key">Clear</button>
+          </div>
+          <div class="search-row">
+            <label class="grow">
+              Search courses
+              <input type="search" id="course-search-q" placeholder="Club or course name" autocomplete="off" />
+            </label>
+            <button type="button" class="btn primary narrow" id="btn-course-search">Search</button>
+          </div>
+          <p id="api-msg" class="api-msg" role="status" aria-live="polite"></p>
+          <ul id="search-results" class="search-results" hidden></ul>
+          <div id="course-detail-panel" class="course-detail-panel hidden">
+            <h3 class="course-detail-title" id="course-detail-title"></h3>
+            <label>
+              Tee box
+              <select id="tee-select"></select>
+            </label>
+            <div class="apply-row">
+              <button type="button" class="btn secondary" id="btn-fill-round">Apply to add round</button>
+              <button type="button" class="btn secondary" id="btn-fill-ch">Apply to course handicap</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card wide" aria-labelledby="rounds-title">
+          <div class="section-head">
+            <h2 id="rounds-title">Scoring record</h2>
+            <div class="tools">
+              <button type="button" class="btn secondary" id="btn-export">Export JSON</button>
+              <label class="btn secondary file-label">
+                Import
+                <input type="file" id="file-import" accept="application/json" hidden />
+              </label>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="rounds">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Course</th>
+                  <th>Adj. gross</th>
+                  <th>Rating</th>
+                  <th>Slope</th>
+                  <th>Par</th>
+                  <th>Diff.</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="rounds-body"></tbody>
+            </table>
+          </div>
+
+          <form id="form-round" class="add-form">
+            <h3>Add round</h3>
+            <div class="row">
+              <label>
+                Date
+                <input type="date" id="in-date" required />
+              </label>
+              <label class="grow">
+                Course
+                <input type="text" id="in-course" placeholder="e.g. City Muni — Blue" autocomplete="off" />
+              </label>
+            </div>
+            <div class="row four">
+              <label>
+                Adjusted gross
+                <input type="number" id="in-ags" min="1" max="200" required placeholder="87" />
+              </label>
+              <label>
+                Course rating
+                <input type="number" id="in-cr" step="0.1" required placeholder="72.1" />
+              </label>
+              <label>
+                Slope rating
+                <input type="number" id="in-slope" step="1" required placeholder="130" />
+              </label>
+              <label>
+                Par
+                <input type="number" id="in-par" step="1" required placeholder="72" />
+              </label>
+            </div>
+            <div class="row">
+              <label>
+                PCC (−1 to +3, optional)
+                <input type="number" id="in-pcc" min="-1" max="3" step="1" placeholder="0" />
+              </label>
+              <div class="submit-cell">
+                <button type="submit" class="btn primary">Add round</button>
+              </div>
+            </div>
+          </form>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <p>
+          Run locally: <code>python3 -m http.server 8765</code> in this folder, then open
+          <code>http://localhost:8765</code> (needed for ES modules). Course search calls
+          <code>https://api.golfcourseapi.com</code> directly (CORS enabled); add your own key from golfcourseapi.com.
+        </p>
+      </footer>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>
