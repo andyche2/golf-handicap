@@ -1,16 +1,86 @@
 /**
  * GolfCourseAPI — https://api.golfcourseapi.com/docs/api
- * Auth: HTTP header `Key: <your API key>` (see WWW-Authenticate on 401 responses).
+ * Auth: `Authorization: Key <your API key>` (raw key; OpenAPI — not JSON-quoted).
  * Register for a free key at https://golfcourseapi.com
+ *
+ * Browser note: GolfCourseAPI’s CORS preflight omits GET from Access-Control-Allow-Methods,
+ * so direct `fetch` to api.golfcourseapi.com from a page usually fails with "Failed to fetch".
+ *
+ * Fix CORS: use same-origin `/api/golfcourse/v1` (provided by `node server.mjs`). The app also sets a session flag
+ * after `/.dev-proxy-health` for LAN origins (e.g. http://192.168.x.x:8765).
+ *
+ * Optional worker for static hosting: `localStorage.setItem('golf-handicap-cors-proxy', 'https://…/v1')` (no UI).
  */
 
-const API_BASE = "https://api.golfcourseapi.com/v1";
+const DEFAULT_API_BASE = "https://api.golfcourseapi.com/v1";
+const PROXY_STORAGE_KEY = "golf-handicap-cors-proxy";
+
+/** Prefer built-in proxy on loopback without relying on sessionStorage (private mode / race / health hiccups). */
+function useLoopbackSameOriginProxy() {
+  if (typeof window === "undefined") return false;
+  try {
+    const h = (window.location.hostname || "").toLowerCase();
+    return h === "localhost" || h === "127.0.0.1" || h === "::1" || h === "[::1]";
+  } catch {
+    return false;
+  }
+}
+
+function resolveApiBase() {
+  if (typeof window === "undefined") return DEFAULT_API_BASE;
+
+  try {
+    const raw = localStorage.getItem(PROXY_STORAGE_KEY)?.trim();
+    if (raw) {
+      let b = raw.replace(/\/+$/, "");
+      if (!b.endsWith("/v1")) b = `${b}/v1`;
+      return b;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  if (useLoopbackSameOriginProxy()) {
+    return `${window.location.origin}/api/golfcourse/v1`;
+  }
+
+  try {
+    if (sessionStorage.getItem("golf-dev-api-proxy") === "1") {
+      return `${window.location.origin}/api/golfcourse/v1`;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return DEFAULT_API_BASE;
+}
+
+/**
+ * Normalize pasted keys (wrapping quotes, `Key …`, `Bearer …`, accidental `Authorization:` line).
+ * @param {string} apiKey
+ */
+function normalizeApiKey(apiKey) {
+  let s = String(apiKey || "").trim();
+  if (!s) return "";
+  s = s.replace(/^authorization\s*:\s*/i, "").trim();
+  const bearer = s.match(/^bearer\s+(.+)$/i);
+  if (bearer) s = bearer[1].trim();
+  const keyScheme = s.match(/^key\s+(.+)$/i);
+  if (keyScheme) s = keyScheme[1].trim();
+  if (
+    (s.startsWith('"') && s.endsWith('"') && s.length >= 2) ||
+    (s.startsWith("'") && s.endsWith("'") && s.length >= 2)
+  ) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
 
 /** @param {string} apiKey */
-function keyHeaders(apiKey) {
-  const key = String(apiKey || "").trim();
+function authHeaders(apiKey) {
+  const key = normalizeApiKey(apiKey);
   if (!key) throw new Error("API key is required.");
-  return { Key: key };
+  return { Authorization: `Key ${key}` };
 }
 
 /**
@@ -22,10 +92,10 @@ export async function searchCourses(apiKey, searchQuery) {
   const q = String(searchQuery || "").trim();
   if (!q) throw new Error("Enter a course or club name to search.");
 
-  const url = new URL(`${API_BASE}/search`);
+  const url = new URL(`${resolveApiBase()}/search`);
   url.searchParams.set("search_query", q);
 
-  const res = await fetch(url.toString(), { headers: keyHeaders(apiKey) });
+  const res = await fetch(url.toString(), { headers: authHeaders(apiKey) });
   const text = await res.text();
   let data;
   try {
@@ -48,7 +118,7 @@ export async function getCourse(apiKey, courseId) {
   const id = Number(courseId);
   if (!Number.isFinite(id)) throw new Error("Invalid course id.");
 
-  const res = await fetch(`${API_BASE}/courses/${id}`, { headers: keyHeaders(apiKey) });
+  const res = await fetch(`${resolveApiBase()}/courses/${id}`, { headers: authHeaders(apiKey) });
   const text = await res.text();
   let data;
   try {

@@ -95,10 +95,29 @@ body {
 .theme-bar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+}
+
+.theme-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.nav-home {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.nav-home:hover {
+  color: var(--accent);
 }
 
 .theme-label {
@@ -160,6 +179,24 @@ html[data-theme="light"] .theme-opt.active {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+}
+
+.hero-inner--centered {
+  text-align: center;
+}
+
+.hero-logo {
+  display: block;
+  width: 4.25rem;
+  height: 4.25rem;
+  margin: 0 auto 1rem;
+  object-fit: contain;
+}
+
+.hero-inner--centered .lede {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 52ch;
 }
 
 .eyebrow {
@@ -234,6 +271,38 @@ h1 {
   color: var(--accent);
   font-weight: 500;
   letter-spacing: -0.03em;
+}
+
+.handicap-hero-grid {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 720px) {
+  .handicap-hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr);
+    gap: 1.75rem;
+  }
+
+  .handicap-hero-index {
+    display: flex;
+    justify-content: center;
+    padding: 0.25rem 0;
+  }
+
+  .handicap-hero-index .big-index {
+    font-size: clamp(3.25rem, 7vw, 4.5rem);
+    text-align: center;
+  }
+}
+
+.handicap-hero-copy .meta {
+  margin: 0 0 0.85rem;
+}
+
+.handicap-hero-copy .fineprint + .fineprint {
+  margin-top: 0.65rem;
 }
 
 .meta {
@@ -317,31 +386,6 @@ input:focus,
 select:focus {
   border-color: var(--focus-ring);
   box-shadow: 0 0 0 3px var(--focus-glow);
-}
-
-.ch-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
-  margin: 0 0 0.75rem;
-  min-height: 1.5rem;
-}
-
-.muted-inline {
-  color: var(--muted);
-  font-size: 0.88rem;
-}
-
-.ch-result {
-  margin: 0.75rem 0 0;
-  font-size: 1.1rem;
-}
-
-#course-handicap-out {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  color: var(--accent);
-  font-weight: 600;
 }
 
 .section-head {
@@ -586,3 +630,114 @@ html[data-theme="light"] .btn.danger {
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+
+/* ——— Landing (index) ——— */
+
+body.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body.landing .theme-bar {
+  justify-content: flex-end;
+}
+
+.landing-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem 3rem;
+  width: 100%;
+  text-align: center;
+}
+
+.landing-inner {
+  width: 100%;
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.landing-logo {
+  display: block;
+  width: 5.5rem;
+  height: 5.5rem;
+  margin: 0 auto 1.25rem;
+  object-fit: contain;
+}
+
+.landing-kicker {
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent-muted);
+  font-weight: 600;
+  margin: 0 0 1rem;
+  text-align: center;
+  width: 100%;
+}
+
+.landing-title {
+  font-size: clamp(2.25rem, 6vw, 3.35rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+  margin: 0 0 1rem;
+  color: var(--text);
+  text-align: center;
+  width: 100%;
+}
+
+.landing-title span {
+  background: linear-gradient(135deg, var(--accent), var(--accent-muted));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-lede {
+  margin: 0 auto 2rem;
+  max-width: 28rem;
+  font-size: 1.05rem;
+  color: var(--muted);
+  line-height: 1.65;
+  text-align: center;
+}
+
+.landing-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.landing-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  color: var(--primary-fg);
+  border: none;
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.landing-cta:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 36px rgba(37, 99, 235, 0.3);
+}
+

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="logoTitle">
+  <title id="logoTitle">Golf Handicap</title>
+  <defs>
+    <linearGradient id="ghMark" x1="18%" y1="12%" x2="88%" y2="92%">
+      <stop offset="0%" stop-color="#7dd3fc" />
+      <stop offset="55%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="44" fill="none" stroke="url(#ghMark)" stroke-width="2.5" opacity="0.35" />
+  <path
+    d="M22 72 C36 54 64 54 78 72"
+    fill="none"
+    stroke="url(#ghMark)"
+    stroke-width="3.2"
+    stroke-linecap="round"
+  />
+  <line x1="50" y1="72" x2="50" y2="26" stroke="url(#ghMark)" stroke-width="4" stroke-linecap="round" />
+  <path d="M50 26 L82 44 L50 56 Z" fill="url(#ghMark)" />
+</svg>

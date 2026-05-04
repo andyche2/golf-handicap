@@ -1,18 +1,14 @@
 import {
   computeScoreDifferential,
   computeHandicapIndex,
-  computeCourseHandicap,
   differentialsForIndex,
   lowestDifferentialCount,
 } from "./handicap.js";
 import { searchCourses, getCourse, listTeeOptions, formatCourseLabel } from "./golfcourse-api.js";
+import { initTheme } from "./theme.js";
 
 const STORAGE_KEY = "golf-handicap-rounds-v1";
 const API_KEY_STORAGE = "golf-handicap-golfcourse-api-key";
-const THEME_KEY = "golf-handicap-theme";
-
-/** @type {number|null} */
-let lastComputedIndex = null;
 
 /** @type {object|null} */
 let loadedCourse = null;
@@ -91,6 +87,34 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
+function formatApiError(err) {
+  if (!err) return "Something went wrong.";
+  const name = err.name || "";
+  const msg = err.message || String(err);
+  const netFail = name === "TypeError" || msg === "Failed to fetch" || msg.includes("NetworkError");
+  if (netFail && typeof location !== "undefined" && location.protocol === "file:") {
+    return (
+      "Course search cannot run from a file: URL (browser blocks cross-origin requests). " +
+      "In the project folder run: node server.mjs — then open http://127.0.0.1:8765/app.html in the browser."
+    );
+  }
+  if (netFail) {
+    return (
+      "Could not reach the API (often CORS). From the project folder run: node server.mjs — then open " +
+      "http://127.0.0.1:8765/app.html (not Live Server / another host unless it proxies /api/golfcourse). " +
+      "Or set localStorage golf-handicap-cors-proxy to your Cloudflare worker URL ending in /v1."
+    );
+  }
+  const low = msg.toLowerCase();
+  if (low.includes("api key") && (low.includes("invalid") || low.includes("missing"))) {
+    return (
+      msg +
+      " If you just registered, confirm your email and activate your account at golfcourseapi.com (sign-in flow)."
+    );
+  }
+  return msg;
+}
+
 function refresh() {
   const rounds = loadRounds();
   for (const r of rounds) {
@@ -107,8 +131,6 @@ function refresh() {
   const hiEl = el("handicap-index");
   const metaEl = el("hi-meta");
 
-  lastComputedIndex = result.index;
-
   if (result.index == null) {
     hiEl.textContent = "—";
     metaEl.textContent = result.error || "";
@@ -118,29 +140,6 @@ function refresh() {
     const n = diffs.length;
     const k = lowestDifferentialCount(n);
     metaEl.textContent = `Based on ${n} score(s) in record; averaging the lowest ${k} score differential(s). Last 20 rounds are used when you have more than 20.`;
-  }
-
-  const suggest = el("ch-index-suggest");
-  const useBtn = el("btn-use-index");
-  if (result.index != null) {
-    const sign = result.index > 0 ? "+" : "";
-    suggest.textContent = `Calculated index: ${sign}${result.index.toFixed(1)}`;
-    useBtn.hidden = false;
-  } else {
-    suggest.textContent = "";
-    useBtn.hidden = true;
-  }
-
-  const chHi = parseFloat(el("ch-hi").value);
-  const chSlope = parseFloat(el("ch-slope").value);
-  const chCr = parseFloat(el("ch-cr").value);
-  const chPar = parseInt(el("ch-par").value, 10);
-
-  const chOut = el("course-handicap-out");
-  if ([chHi, chSlope, chCr, chPar].every((x) => Number.isFinite(x))) {
-    chOut.textContent = String(computeCourseHandicap(chHi, chSlope, chCr, chPar));
-  } else {
-    chOut.textContent = "—";
   }
 }
 
@@ -313,8 +312,7 @@ async function runCourseSearch() {
     }
     resultsEl.hidden = false;
   } catch (err) {
-    const msg = err && err.message ? err.message : String(err);
-    setApiMessage(msg, true);
+    setApiMessage(formatApiError(err), true);
   }
 }
 
@@ -334,10 +332,9 @@ async function loadCourseById(courseId) {
       return;
     }
     showCourseDetail(course, tees);
-    setApiMessage("Select a tee and click Apply.");
+    setApiMessage("Select a tee, then use Apply to add round.");
   } catch (err) {
-    const msg = err && err.message ? err.message : String(err);
-    setApiMessage(msg, true);
+    setApiMessage(formatApiError(err), true);
     hideCourseDetail();
   }
 }
@@ -357,49 +354,15 @@ function applyTeeToRoundForm() {
   setApiMessage("Round form updated — enter your adjusted gross and add the round.");
 }
 
-function applyTeeToCourseHandicap() {
-  if (!loadedCourse) return;
-  const tee = getSelectedTee();
-  if (!tee) {
-    setApiMessage("Select a tee with rating data.", true);
-    return;
-  }
-  el("ch-cr").value = String(tee.course_rating);
-  el("ch-slope").value = String(tee.slope_rating);
-  el("ch-par").value = String(tee.par_total);
-  refresh();
-  setApiMessage("Course handicap fields updated.");
-}
-
-function getTheme() {
-  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-}
-
-function setTheme(theme) {
-  const t = theme === "light" ? "light" : "dark";
-  document.documentElement.setAttribute("data-theme", t);
+async function detectDevApiProxy() {
+  if (typeof sessionStorage === "undefined") return;
   try {
-    localStorage.setItem(THEME_KEY, t);
+    const r = await fetch("/.dev-proxy-health", { cache: "no-store" });
+    if (r.ok) sessionStorage.setItem("golf-dev-api-proxy", "1");
+    else sessionStorage.removeItem("golf-dev-api-proxy");
   } catch {
-    /* ignore */
+    sessionStorage.removeItem("golf-dev-api-proxy");
   }
-  syncThemeButtons();
-}
-
-function syncThemeButtons() {
-  const isDark = getTheme() === "dark";
-  const darkBtn = el("theme-opt-dark");
-  const lightBtn = el("theme-opt-light");
-  darkBtn.setAttribute("aria-pressed", isDark ? "true" : "false");
-  lightBtn.setAttribute("aria-pressed", isDark ? "false" : "true");
-  darkBtn.classList.toggle("active", isDark);
-  lightBtn.classList.toggle("active", !isDark);
-}
-
-function initTheme() {
-  syncThemeButtons();
-  el("theme-opt-dark").addEventListener("click", () => setTheme("dark"));
-  el("theme-opt-light").addEventListener("click", () => setTheme("light"));
 }
 
 function initCourseLookup() {
@@ -437,28 +400,19 @@ function initCourseLookup() {
   });
 
   el("btn-fill-round").addEventListener("click", applyTeeToRoundForm);
-  el("btn-fill-ch").addEventListener("click", applyTeeToCourseHandicap);
 }
 
-function init() {
+async function init() {
   el("in-date").value = new Date().toISOString().slice(0, 10);
+
+  await detectDevApiProxy();
 
   el("form-round").addEventListener("submit", addRound);
   el("btn-export").addEventListener("click", exportData);
-  el("btn-use-index").addEventListener("click", () => {
-    if (lastComputedIndex != null && Number.isFinite(lastComputedIndex)) {
-      el("ch-hi").value = String(lastComputedIndex);
-      refresh();
-    }
-  });
   el("file-import").addEventListener("change", (e) => {
     const f = e.target.files && e.target.files[0];
     if (f) importData(f);
     e.target.value = "";
-  });
-
-  ["ch-hi", "ch-slope", "ch-cr", "ch-par"].forEach((id) => {
-    el(id).addEventListener("input", refresh);
   });
 
   initTheme();
@@ -466,4 +420,4 @@ function init() {
   refresh();
 }
 
-init();
+init().catch((e) => console.error(e));

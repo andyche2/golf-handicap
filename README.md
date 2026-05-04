@@ -42,8 +42,28 @@ The `.nojekyll` file tells GitHub not to run Jekyll on this site, which avoids o
 
 ## Develop locally
 
+**Recommended** (static files + built-in GolfCourseAPI proxy so course search works in the browser):
+
 ```bash
-python3 -m http.server 8765
+cd golf-handicap
+npm start
+# or: node server.mjs
 ```
 
-Open `http://localhost:8765` (ES modules need a local server, not `file://`).
+Open `http://localhost:8765/` (landing) or `http://localhost:8765/app.html` (calculator).
+
+**Alternative:** `python3 -m http.server 8765` only serves files; GolfCourseAPI will still hit CORS from the browser unless you set an **API proxy base** in the app or deploy the worker in `proxy/`.
+
+## GolfCourseAPI from the browser (CORS)
+
+GolfCourseAPI’s CORS preflight response does not allow **GET** in `Access-Control-Allow-Methods`, so authenticated `fetch` from a normal web page often fails with **“Failed to fetch”** even though the same request works in `curl`.
+
+**Workaround:** deploy the tiny **Cloudflare Worker** in the `proxy/` folder (free tier is enough), then in **Course lookup** on `app.html` paste the worker URL including `/v1` (for example `https://golf-handicap-api-proxy.your-account.workers.dev/v1`) and click **Save**.
+
+```bash
+cd proxy
+npx wrangler login   # once
+npx wrangler deploy
+```
+
+The worker forwards `/v1/*` to `https://api.golfcourseapi.com/v1/*` and adds browser-friendly CORS headers.
