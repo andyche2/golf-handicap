@@ -1,4 +1,4 @@
-# Golf Handicap (WHS)
+# Golf Handicap Calculator
 
 Local or web: static HTML/CSS/JS. Optional [GolfCourseAPI](https://golfcourseapi.com) course lookup (your API key stays in the browser).
 

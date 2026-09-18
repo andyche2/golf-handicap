@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="logoTitle">
-  <title id="logoTitle">Golf Handicap</title>
+  <title id="logoTitle">Golf Handicap Calculator</title>
   <defs>
     <linearGradient id="ghMark" x1="18%" y1="12%" x2="88%" y2="92%">
       <stop offset="0%" stop-color="#7dd3fc" />
